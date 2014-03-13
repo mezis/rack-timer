@@ -1,13 +1,26 @@
 
 require 'rack'
 
-module Rack
-  class MiddlewareTimer
+module RackTimer
+
+  module ModuleMethods
+    def log(message)
+      (@_output || $stderr).puts(message)
+    end
+
+    def output=(io)
+      @_output = io
+    end
+  end
+  extend ModuleMethods
+
+
+  class Middleware
 
     def initialize(app)
       @app = app
       self.extend(Borg)
-      _log "started collective: #{self.class.name}"
+      _log "started borg collective: #{self.class.name}"
     end
 
     def call(env)
@@ -28,7 +41,7 @@ module Rack
         end
       end
 
-      def borg?
+      def borged?
         true
       end
 
@@ -36,7 +49,7 @@ module Rack
 
       def recursive_borg
         return if @app.nil?
-        return if @app.respond_to?(:borg?)
+        return if @app.respond_to?(:borged?)
         return unless @app.respond_to?(:call)
         @app.extend(Borg)
       end
@@ -46,25 +59,26 @@ module Rack
         result = call_without_timing(env)
         time_delta = _current_ticks - time_before
 
-        if time_inner = env['borg.time'].andand.to_i
+        if time_inner = env['rack-timer.time']
+          time_inner = time_inner.to_i
           time_self = time_delta - time_inner 
         else
           time_self = time_delta
         end
         _log "#{self.class.name} took #{time_self} us"
 
-        if (request_start = env['HTTP_X_REQUEST_START']) && kind_of?(Rack::MiddlewareTimer)
+        if (request_start = env['HTTP_X_REQUEST_START']) && kind_of?(RackTimer::Middleware)
           time_queue_start = request_start.gsub('t=', '').to_i
           time_in_queue = time_before - time_queue_start
           _log "queued for #{time_in_queue} us"
         end
 
-        env['borg.time'] = time_delta
+        env['rack-timer.time'] = time_delta
         return result
       end
 
       def _log(message)
-        $stderr.puts "[borg] #{message}"
+        RackTimer.log "[rack-timer] #{message}"
       end
 
       def _current_ticks
