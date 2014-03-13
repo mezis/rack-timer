@@ -40,7 +40,7 @@ They will report the middleware starting up:
 
 then timing each request:
 
-    [borg] Proc took 3398135 us
+    [rack-timer] Proc took 3398135 us
     [rack-timer] Rack::Cors took 54 us
     [rack-timer] Rack::OutOfBandGC took 51 us
     ...
