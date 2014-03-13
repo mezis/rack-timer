@@ -6,7 +6,7 @@ Is one of your Rack middlewares misbehaving in production?
 
 Add `RackTimer::Middleware` to the to of your middleware stack and figure out.
 
-![Build Status](https://travis-ci.org/mezis/rack-timer.png?branch=master)](https://travis-ci.org/mezis/rack-timer)
+[![Build Status](https://travis-ci.org/mezis/rack-timer.png?branch=master)](https://travis-ci.org/mezis/rack-timer)
 
 ## Installation
 
