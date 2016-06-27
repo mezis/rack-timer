@@ -8,8 +8,18 @@ module RackTimer
       (@_output || $stderr).puts(message)
     end
 
+    def measure(key, duration)
+      if @_statsd
+        @_statsd.timing("rack-timer.time.#{key}", duration)
+      end
+    end
+
     def output=(io)
       @_output = io
+    end
+
+    def statsd=(client)
+      @_statsd = client
     end
   end
   extend ModuleMethods
@@ -61,11 +71,12 @@ module RackTimer
 
         if time_inner = env['rack-timer.time']
           time_inner = time_inner.to_i
-          time_self = time_delta - time_inner 
+          time_self = time_delta - time_inner
         else
           time_self = time_delta
         end
         _log "#{self.class.name} took #{time_self} us"
+        _measure(self.class.name, time_self / 1000)
 
         if (request_start = env['HTTP_X_REQUEST_START']) && kind_of?(RackTimer::Middleware)
           time_queue_start = request_start.gsub('t=', '').to_i
@@ -79,6 +90,10 @@ module RackTimer
 
       def _log(message)
         RackTimer.log "[rack-timer] #{message}"
+      end
+
+      def _measure(class_name, duration)
+        RackTimer.measure(class_name.downcase.gsub('::', '_'), duration)
       end
 
       def _current_ticks

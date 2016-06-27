@@ -25,7 +25,10 @@ If you want to change that, you can tell `rack-timer` to send data to another
 file-y object, for instance:
 
     RackTimer.output = $stdout
-    
+
+If you want to send execution time to StatsD as well, you can specify a client:
+
+    RackTimer.statsd = $statsd
 
 ## Usage
 
