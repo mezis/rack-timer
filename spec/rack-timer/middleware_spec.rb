@@ -4,11 +4,13 @@ require 'rack-timer'
 describe RackTimer::Middleware do
   let(:buffer) { StringIO.new }
   let(:output) { buffer.rewind ; buffer.read }
+  let(:statsd) { double(timing: true) }
   let(:app) { build_stack *stack }
   let(:stack) { [Test::App, Test::FastMiddleware, RackTimer::Middleware] }
 
   before do
     RackTimer.output = buffer
+    RackTimer.statsd = statsd
   end
 
   def build_stack(app_class, *middlewares)
@@ -34,13 +36,16 @@ describe RackTimer::Middleware do
     end
 
     it 'logs middleware timing' do
+      statsd.should_receive(:timing).with("rack-timer.time.test_app", kind_of(Integer))
+      statsd.should_receive(:timing).with("rack-timer.time.test_fastmiddleware", kind_of(Integer))
+      statsd.should_receive(:timing).with("rack-timer.time.racktimer_middleware", kind_of(Integer))
       app.call({})
       output.should =~ /Test::FastMiddleware took \d+ us/
     end
 
     context 'with a slow middleware' do
       let(:stack) { [Test::App, Test::SlowMiddleware, Test::FastMiddleware, RackTimer::Middleware] }
-      
+
       it 'times the slow middleware' do
         app.call({})
         output.should =~ /Test::SlowMiddleware took \d+ us/
